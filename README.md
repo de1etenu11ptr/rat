@@ -31,6 +31,9 @@ own row, collapsed or not. Commit-set calcs are computed lazily, only for the
 objects that actually become visible, and cached in a Map, so expanding,
 collapsing and switching tabs does not recompute anything.
 
+The repo tab also offers an optional bar graph — added vs removed per
+repository — toggled on at the bottom of the table.
+
 ## Requirements
 
 - Node.js 18+ and npm
@@ -93,6 +96,7 @@ with `[rat]`.
 - `src/components/FilterPanel.jsx` - collapsible filter sidebar, incl. author merging
 - `src/components/RepoPanel.jsx` - add/list/remove repositories
 - `src/components/MetricsView.jsx` - metric tabs (file / directory / repo / commit set), collapsible per-repo trees
+- `src/components/RepoGraph.jsx` - optional added / removed bar graph for the repo tab
 - `src/metrics/fileMetrics.js` - change rows -> file metric aggregation
 - `src/metrics/directoryMetrics.js` - change rows -> directory subtree aggregation
 - `src/metrics/repoMetrics.js` - change rows -> repo root totals

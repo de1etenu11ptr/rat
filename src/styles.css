@@ -325,3 +325,85 @@ button.small {
   background: none;
   text-decoration: underline;
 }
+
+/* repo metric graph */
+
+.graph-toggle {
+  display: block;
+  margin-top: 10px;
+}
+
+.graph-toggle input {
+  margin-right: 6px;
+}
+
+.chart {
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  max-width: 720px;
+}
+
+.chart-legend {
+  margin-bottom: 6px;
+}
+
+.chart-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 6px;
+  vertical-align: middle;
+  margin: 0 4px 0 10px;
+  background: #111;
+}
+
+.chart-legend .chart-swatch:first-child {
+  margin-left: 0;
+}
+
+.chart-swatch.removed {
+  background: #999;
+}
+
+.chart-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+
+.chart-label {
+  flex: 0 0 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart-bars {
+  flex: 1;
+  min-width: 0;
+}
+
+.chart-bar {
+  display: block;
+  height: 6px;
+  margin: 2px 0;
+  background: #111;
+}
+
+.chart-bar.removed {
+  background: #999;
+}
+
+.chart-values {
+  flex: 0 0 120px;
+  text-align: right;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-values span {
+  display: block;
+  height: 10px;
+  line-height: 10px;
+}

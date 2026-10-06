@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import MetricsTable from './MetricsTable.jsx'
+import RepoGraph from './RepoGraph.jsx'
 import { buildChangeRows, aggregateFileMetrics } from '../metrics/fileMetrics.js'
 import { aggregateDirectoryMetrics } from '../metrics/directoryMetrics.js'
 import { aggregateRepoMetrics } from '../metrics/repoMetrics.js'
@@ -21,7 +22,7 @@ const TABS = [
   {
     id: 'repo',
     label: 'repo',
-    note: 'added / removed / growth / churn per repository — directory metrics at the root of the commit tree',
+    note: 'added / removed / growth / churn per repository — directory metrics at the root of the commit tree; an optional bar graph at the bottom compares added / removed per repo',
   },
   {
     id: 'commits',
@@ -79,6 +80,7 @@ export default function MetricsView({ repos, analyses, applied }) {
   const [tab, setTab] = useState('file')
   const [commitScope, setCommitScope] = useState('file')
   const [expanded, setExpanded] = useState(() => new Set())
+  const [showRepoGraph, setShowRepoGraph] = useState(false)
 
   const changeRows = useMemo(() => buildChangeRows(repos, analyses), [repos, analyses])
   const filtered = useMemo(() => changeRows.filter((row) => rowMatches(row, applied)), [changeRows, applied])
@@ -217,6 +219,24 @@ export default function MetricsView({ repos, analyses, applied }) {
         emptyMessage={emptyMessage}
         onToggle={view.mode === 'tree' ? toggle : undefined}
       />
+      {tab === 'repo' && (
+        <div className="graph">
+          <label className="graph-toggle small">
+            <input
+              type="checkbox"
+              checked={showRepoGraph}
+              onChange={(e) => setShowRepoGraph(e.target.checked)}
+            />
+            graph view
+          </label>
+          {showRepoGraph &&
+            (displayRows.length === 0 ? (
+              <div className="muted small">{emptyMessage}</div>
+            ) : (
+              <RepoGraph rows={displayRows} repoName={repoName} />
+            ))}
+        </div>
+      )}
     </section>
   )
 }
