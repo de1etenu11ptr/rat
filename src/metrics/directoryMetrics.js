@@ -27,14 +27,20 @@ export function directoryChain(filePath) {
   return chain
 }
 
+// The directories a change row belongs to: every ancestor of its path, and
+// for renames also every ancestor of its source path (oldPath).
+export function directoryTargets(row) {
+  const dirs = new Set(directoryChain(row.path))
+  if (row.oldPath) {
+    for (const dir of directoryChain(row.oldPath)) dirs.add(dir)
+  }
+  return dirs
+}
+
 export function aggregateDirectoryMetrics(rows) {
   const byDir = new Map()
   for (const row of rows) {
-    const dirs = new Set(directoryChain(row.path))
-    if (row.oldPath) {
-      for (const dir of directoryChain(row.oldPath)) dirs.add(dir)
-    }
-    for (const dir of dirs) {
+    for (const dir of directoryTargets(row)) {
       const key = `${row.repoId}\u001f${dir}`
       let agg = byDir.get(key)
       if (!agg) {

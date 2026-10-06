@@ -1,7 +1,22 @@
+import { useState } from 'react'
 import { parseCommitList } from '../data/filter.js'
 
-export default function FilterPanel({ repos, authors, draft, onChange, onApply, onReset }) {
+export default function FilterPanel({
+  repos,
+  authors,
+  rawAuthors,
+  aliases,
+  draft,
+  onChange,
+  onApply,
+  onReset,
+  onMergeAuthors,
+  onUnmergeAuthor,
+}) {
+  const [mergeFrom, setMergeFrom] = useState('')
+  const [mergeTo, setMergeTo] = useState('')
   const set = (patch) => onChange({ ...draft, ...patch })
+  const aliasEntries = Object.entries(aliases)
 
   const toggleRepo = (id, checked) => {
     const repoIds = checked
@@ -42,6 +57,53 @@ export default function FilterPanel({ repos, authors, draft, onChange, onApply, 
             <option key={a} value={a}>{a}</option>
           ))}
         </select>
+      </div>
+
+      <div className="field">
+        <span className="field-label">merge authors</span>
+        <label className="subfield">
+          from
+          <select value={mergeFrom} onChange={(e) => setMergeFrom(e.target.value)}>
+            <option value="">(select)</option>
+            {rawAuthors.map((a) => (
+              <option key={a} value={a}>{a}</option>
+            ))}
+          </select>
+        </label>
+        <label className="subfield">
+          into
+          <select value={mergeTo} onChange={(e) => setMergeTo(e.target.value)}>
+            <option value="">(select)</option>
+            {rawAuthors.map((a) => (
+              <option key={a} value={a}>{a}</option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          className="small"
+          disabled={!mergeFrom || !mergeTo || mergeFrom === mergeTo}
+          onClick={() => {
+            onMergeAuthors(mergeFrom, mergeTo)
+            setMergeFrom('')
+            setMergeTo('')
+          }}
+        >
+          merge
+        </button>
+        {aliasEntries.length > 0 && (
+          <div className="indent">
+            {aliasEntries.map(([from, to]) => (
+              <div key={from} className="merge-entry">
+                <span className="small">{from} → {to}</span>
+                <button type="button" className="small" onClick={() => onUnmergeAuthor(from)}>
+                  x
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="muted small">a repository .mailmap is applied automatically; merge here when it has none</div>
       </div>
 
       <div className="field">

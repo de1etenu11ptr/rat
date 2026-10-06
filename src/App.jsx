@@ -4,10 +4,24 @@ import RepoPanel from './components/RepoPanel.jsx'
 import MetricsView from './components/MetricsView.jsx'
 import { listRepos, addRepoFromUrl, addRepoFromZip, removeRepo, getAnalysis } from './api.js'
 import { emptyFilters } from './data/filter.js'
+import { applyAuthorAliases, collectAuthors, mergeAuthor, removeAuthorAlias } from './data/authors.js'
+
+const ALIASES_KEY = 'rat-author-aliases'
+
+function loadAuthorAliases() {
+  try {
+    const raw = localStorage.getItem(ALIASES_KEY)
+    const parsed = raw ? JSON.parse(raw) : {}
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
 
 export default function App() {
   const [repos, setRepos] = useState([])
   const [analyses, setAnalyses] = useState({})
+  const [authorAliases, setAuthorAliases] = useState(loadAuthorAliases)
   const [apiError, setApiError] = useState('')
   const [filtersOpen, setFiltersOpen] = useState(true)
   const [draft, setDraft] = useState(emptyFilters)
@@ -46,6 +60,10 @@ export default function App() {
     refresh()
   }, [])
 
+  useEffect(() => {
+    localStorage.setItem(ALIASES_KEY, JSON.stringify(authorAliases))
+  }, [authorAliases])
+
   const analyzing = repos.some((r) => r.status === 'analyzing')
   useEffect(() => {
     if (!analyzing) return
@@ -53,13 +71,14 @@ export default function App() {
     return () => clearInterval(timer)
   }, [analyzing])
 
-  const authors = useMemo(() => {
-    const set = new Set()
-    for (const analysis of Object.values(analyses)) {
-      for (const commit of analysis.commits) set.add(commit.author)
-    }
-    return [...set].sort()
-  }, [analyses])
+  // Manual author merges (for repos without a .mailmap) are applied to the
+  // analyses before anything downstream reads authors.
+  const mergedAnalyses = useMemo(
+    () => applyAuthorAliases(analyses, authorAliases),
+    [analyses, authorAliases]
+  )
+  const authors = useMemo(() => collectAuthors(mergedAnalyses), [mergedAnalyses])
+  const rawAuthors = useMemo(() => collectAuthors(analyses), [analyses])
 
   function stripRepoId(filters, id) {
     return { ...filters, repoIds: filters.repoIds.filter((rid) => rid !== id) }
@@ -111,19 +130,23 @@ export default function App() {
           <FilterPanel
             repos={repos}
             authors={authors}
+            rawAuthors={rawAuthors}
+            aliases={authorAliases}
             draft={draft}
             onChange={setDraft}
             onApply={() => setApplied({ ...draft })}
             onReset={resetFilters}
+            onMergeAuthors={(from, to) => setAuthorAliases((a) => mergeAuthor(a, from, to))}
+            onUnmergeAuthor={(author) => setAuthorAliases((a) => removeAuthorAlias(a, author))}
           />
         )}
         <main className="main">
           <p className="muted small">
-            file metrics are live from the local git analysis; directory / repo / commit-set metrics pending.
+            file / directory / repo / commit-set metrics are live from the local git analysis.
           </p>
           {apiError && <p className="error small">error: {apiError}</p>}
           <RepoPanel repos={repos} onAddUrl={handleAddUrl} onAddZip={handleAddZip} onRemove={handleRemove} />
-          <MetricsView repos={repos} analyses={analyses} applied={applied} />
+          <MetricsView repos={repos} analyses={mergedAnalyses} applied={applied} />
         </main>
       </div>
     </div>

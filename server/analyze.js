@@ -5,8 +5,12 @@ const execFileAsync = promisify(execFile)
 
 // Walks the whole history in one pass. For every commit we record the line
 // changes of each file versus its previous commit (h -> h(p)), taken from
-// `git log --numstat`. Merge commits produce no file changes with the default
-// log behavior. Binary files ('-') are skipped: they have no line counts.
+// `git log --numstat`, the author as "Name <email>" (via %aN/%aE, so a
+// repository .mailmap is applied) and a merge flag derived from the parents
+// listed by %p. Merge commits produce no file changes with the default log
+// behavior; binary files ('-') are skipped, they have no line counts. Pure
+// renames / mode changes (0/0) are kept as rows: they introduce the file
+// entry at its new path but never count as modifications.
 export async function analyzeRepo(repoDir) {
   const { stdout } = await execFileAsync(
     'git',
@@ -17,7 +21,7 @@ export async function analyzeRepo(repoDir) {
       '--no-color',
       '-M',
       '--numstat',
-      '--pretty=format:\x1e%H\x1f%an\x1f%aI',
+      '--pretty=format:\x1e%H\x1f%aN\x1f%aE\x1f%aI\x1f%p',
     ],
     { maxBuffer: 256 * 1024 * 1024 }
   )
@@ -26,7 +30,7 @@ export async function analyzeRepo(repoDir) {
   for (const chunk of stdout.split('\x1e')) {
     if (!chunk.trim()) continue
     const lines = chunk.split('\n')
-    const [sha, author, date] = lines[0].split('\x1f')
+    const [sha, name, email, date, parents] = lines[0].split('\x1f')
     const files = []
     for (const line of lines.slice(1)) {
       if (!line) continue
@@ -38,7 +42,10 @@ export async function analyzeRepo(repoDir) {
       if (oldPath) file.oldPath = oldPath
       files.push(file)
     }
-    commits.push({ sha, author, date, files })
+    const parentList = parents?.trim() ? parents.trim().split(' ') : []
+    const commit = { sha, author: `${name} <${email}>`, date, files }
+    if (parentList.length > 1) commit.merge = true
+    commits.push(commit)
   }
 
   return { generatedAt: new Date().toISOString(), commits }

@@ -175,6 +175,18 @@ textarea {
   margin-bottom: 10px;
 }
 
+.merge-entry {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 2px 0;
+}
+
+.merge-entry span {
+  word-break: break-all;
+}
+
 /* main */
 
 .main {
