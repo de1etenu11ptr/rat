@@ -302,3 +302,26 @@ button.small {
   padding: 0 6px;
   font-size: 12px;
 }
+
+/* metric trees */
+
+.tree-cell {
+  display: inline-block;
+}
+
+.tree-cell .tree-gutter {
+  display: inline-block;
+  width: 32px;
+}
+
+.tree-toggle {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.tree-toggle:hover {
+  background: none;
+  text-decoration: underline;
+}

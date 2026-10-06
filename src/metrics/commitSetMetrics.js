@@ -67,3 +67,72 @@ export function aggregateCommitSetMetrics(rows, scope, commitCounts) {
     }
   })
 }
+
+// Lazy, cached variant of aggregateCommitSetMetrics used by the tables: only
+// the objects that are actually looked up (the tree rows that become visible)
+// are computed, and every result stays in a Map so expanding, collapsing and
+// switching tabs does not recompute it. One index per scope is built on first
+// use, in a single pass over the rows (same membership rules as above); a
+// fresh calculator is created when the filtered rows change.
+export function createCommitSetCalculator(rows, commitCounts) {
+  const indexes = new Map() // scope -> Map(`repoId\u001fpath` -> { repoId, path, rows })
+  const cache = new Map() // `<scope>\u001f<repoId>\u001f<path>` -> result
+
+  function scopeIndex(scope) {
+    let index = indexes.get(scope)
+    if (index) return index
+    index = new Map()
+    for (const row of rows) {
+      const targets = scope === 'dir' ? directoryTargets(row) : scope === 'repo' ? ['/'] : [row.path]
+      for (const target of targets) {
+        const key = `${row.repoId}\u001f${target}`
+        let entry = index.get(key)
+        if (!entry) index.set(key, (entry = { repoId: row.repoId, path: target, rows: [] }))
+        entry.rows.push(row)
+      }
+    }
+    indexes.set(scope, index)
+    return index
+  }
+
+  return {
+    // The { repoId, path } objects of a scope, for building the trees.
+    files: () => [...scopeIndex('file').values()].map(({ repoId, path }) => ({ repoId, path })),
+    dirs: () => [...scopeIndex('dir').values()].map(({ repoId, path }) => ({ repoId, path })),
+    repos: () => [...scopeIndex('repo').values()].map(({ repoId }) => repoId),
+
+    // The commit-set metrics of one object, computed on first lookup.
+    get(scope, repoId, path = '/') {
+      const cacheKey = `${scope}\u001f${repoId}\u001f${path}`
+      const cached = cache.get(cacheKey)
+      if (cached) return cached
+      const commits = commitCounts.get(repoId) ?? 0
+      let added = 0
+      let removed = 0
+      const shas = new Set()
+      const entry = scopeIndex(scope).get(`${repoId}\u001f${path}`)
+      for (const row of entry?.rows ?? []) {
+        added += row.added
+        removed += row.removed
+        if (row.added > 0 || row.removed > 0) shas.add(row.sha)
+      }
+      const churn = added + removed
+      const result = {
+        repoId,
+        path,
+        added,
+        removed,
+        growth: added - removed,
+        churn,
+        modifications: shas.size,
+        frequency: commits > 0 ? shas.size / commits : 0,
+        churnRate: commits > 0 ? churn / commits : 0,
+      }
+      cache.set(cacheKey, result)
+      return result
+    },
+
+    // Diagnostics / tests: how many objects have been computed so far.
+    cachedCount: () => cache.size,
+  }
+}

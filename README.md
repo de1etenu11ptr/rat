@@ -22,6 +22,15 @@ A commit set H is the set of non-merge commits matching the repo/author/commit
 filters. Rows without line changes (pure renames and the like) are kept in the
 tables but never count as a modification.
 
+The file, directory and commit-set tables render as collapsible trees: one
+node per repository, directories in between and files at the leaves, toggled
+with `[+]` / `[-]`. In the file view (and the commit-set per-file scope) the
+directory rows are pure grouping — they carry no stats until a file below them
+is expanded; the directory views keep each directory's subtree totals on its
+own row, collapsed or not. Commit-set calcs are computed lazily, only for the
+objects that actually become visible, and cached in a Map, so expanding,
+collapsing and switching tabs does not recompute anything.
+
 ## Requirements
 
 - Node.js 18+ and npm
@@ -83,11 +92,12 @@ with `[rat]`.
 - `src/api.js` - API client
 - `src/components/FilterPanel.jsx` - collapsible filter sidebar, incl. author merging
 - `src/components/RepoPanel.jsx` - add/list/remove repositories
-- `src/components/MetricsView.jsx` - metric tabs (file / directory / repo / commit set)
+- `src/components/MetricsView.jsx` - metric tabs (file / directory / repo / commit set), collapsible per-repo trees
 - `src/metrics/fileMetrics.js` - change rows -> file metric aggregation
 - `src/metrics/directoryMetrics.js` - change rows -> directory subtree aggregation
 - `src/metrics/repoMetrics.js` - change rows -> repo root totals
-- `src/metrics/commitSetMetrics.js` - change rows -> commit-set metrics over H
+- `src/metrics/commitSetMetrics.js` - change rows -> commit-set metrics over H; lazy cached calculator for the tables
+- `src/data/tree.js` - collapsible path trees (repo -> directories -> leaves) for the metric tables
 - `src/data/authors.js` - author identity resolution and manual merging
 - `src/data/filter.js` - client-side filter matching
 - `src/styles.css` - styling
