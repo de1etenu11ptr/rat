@@ -1,30 +1,44 @@
 import { useState } from 'react'
 
-function nameFromUrl(url) {
-  try {
-    const u = new URL(url)
-    const seg = u.pathname.split('/').filter(Boolean).pop() ?? u.hostname
-    return seg.replace(/\.git$/, '')
-  } catch {
-    return url
-  }
-}
-
-export default function RepoPanel({ repos, onAdd, onRemove }) {
+export default function RepoPanel({ repos, onAddUrl, onAddZip, onRemove }) {
   const [url, setUrl] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
 
-  function addUrl() {
+  async function submitUrl() {
     const trimmed = url.trim()
-    if (!trimmed) return
-    onAdd({ name: nameFromUrl(trimmed), source: trimmed, kind: 'url' })
-    setUrl('')
+    if (!trimmed || busy) return
+    setBusy(true)
+    setError('')
+    try {
+      await onAddUrl(trimmed)
+      setUrl('')
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setBusy(false)
+    }
   }
 
-  function addZip(e) {
+  async function submitZip(e) {
     const file = e.target.files[0]
     if (!file) return
-    onAdd({ name: file.name.replace(/\.zip$/i, ''), source: file.name, kind: 'zip' })
-    e.target.value = ''
+    setBusy(true)
+    setError('')
+    try {
+      await onAddZip(file)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
+      e.target.value = ''
+    }
+  }
+
+  function statusText(r) {
+    if (r.status === 'ready') return `${r.commitCount} commits`
+    if (r.status === 'error') return `error: ${r.error}`
+    return r.status
   }
 
   return (
@@ -33,30 +47,35 @@ export default function RepoPanel({ repos, onAdd, onRemove }) {
       <div className="row">
         <input
           type="text"
-          placeholder="https://github.com/user/repo.git"
+          placeholder="https://github.com/user/repo.git (or a local path)"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && addUrl()}
+          onKeyDown={(e) => e.key === 'Enter' && submitUrl()}
+          disabled={busy}
         />
-        <button type="button" onClick={addUrl}>add url</button>
-        <label className="file-button">
+        <button type="button" onClick={submitUrl} disabled={busy}>add url</button>
+        <label className={busy ? 'file-button disabled' : 'file-button'}>
           add zip
-          <input type="file" accept=".zip" onChange={addZip} />
+          <input type="file" accept=".zip" onChange={submitZip} disabled={busy} />
         </label>
       </div>
+      {error && <p className="error small">error: {error}</p>}
       <table className="metrics">
         <thead>
           <tr>
             <th>repo</th>
             <th>source</th>
             <th>type</th>
+            <th>status</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           {repos.length === 0 ? (
             <tr>
-              <td colSpan={4} className="empty">no repositories</td>
+              <td colSpan={5} className="empty">
+                no repositories — add one above (zip archives must contain .git history)
+              </td>
             </tr>
           ) : (
             repos.map((r) => (
@@ -64,6 +83,7 @@ export default function RepoPanel({ repos, onAdd, onRemove }) {
                 <td>{r.name}</td>
                 <td className="source">{r.source}</td>
                 <td>{r.kind}</td>
+                <td className={r.status === 'error' ? 'status error' : 'status'}>{statusText(r)}</td>
                 <td>
                   <button type="button" className="small" onClick={() => onRemove(r.id)}>
                     remove

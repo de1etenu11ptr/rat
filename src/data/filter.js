@@ -1,5 +1,4 @@
-// Client-side filter matching over the placeholder dataset.
-// Moves to the backend query layer once analysis is implemented.
+// Client-side filter matching for metric rows (repo, author, path, commits).
 
 export function emptyFilters() {
   return {

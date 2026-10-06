@@ -1,4 +1,4 @@
-export default function MetricsTable({ columns, rows }) {
+export default function MetricsTable({ columns, rows, emptyMessage = 'no rows match the current filters' }) {
   return (
     <table className="metrics">
       <thead>
@@ -12,7 +12,7 @@ export default function MetricsTable({ columns, rows }) {
         {rows.length === 0 ? (
           <tr>
             <td colSpan={columns.length} className="empty">
-              no rows match the current filters
+              {emptyMessage}
             </td>
           </tr>
         ) : (

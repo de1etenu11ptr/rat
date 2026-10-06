@@ -55,6 +55,12 @@ button:hover {
   background: var(--panel-bg);
 }
 
+button:disabled {
+  color: var(--muted);
+  background: var(--bg);
+  cursor: default;
+}
+
 button.primary {
   border-color: var(--border-strong);
   font-weight: bold;
@@ -75,6 +81,10 @@ textarea {
 
 .muted {
   color: var(--muted);
+}
+
+.error {
+  color: #a00;
 }
 
 .small {
@@ -205,6 +215,12 @@ textarea {
   background: var(--panel-bg);
 }
 
+.file-button.disabled {
+  color: var(--muted);
+  background: var(--bg);
+  cursor: default;
+}
+
 .file-button input {
   display: none;
 }
@@ -230,11 +246,6 @@ textarea {
   background: var(--bg);
   border-color: var(--border-strong);
   font-weight: bold;
-}
-
-.tabs-note {
-  margin-left: auto;
-  padding: 0 0 4px 8px;
 }
 
 .tab-note {
@@ -265,7 +276,8 @@ table.metrics .num {
   font-variant-numeric: tabular-nums;
 }
 
-table.metrics td.source {
+table.metrics td.source,
+table.metrics td.status {
   word-break: break-all;
 }
 
